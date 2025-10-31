@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # N8N Workflow Automation
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: lightning-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=changeme123  # CHANGE THIS!
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/New_York
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/.n8n/workflows
+    networks:
+      - lightning-network
+
+  # Flask API Backend for Enhanced Lightning GEX
+  lightning-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: lightning-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      - MASTER_PASSWORD=${MASTER_PASSWORD}
+      - TD_API_KEY=${TD_API_KEY}
+      - TD_API_SECRET=${TD_API_SECRET}
+      - ALPHA_VANTAGE_KEY=${ALPHA_VANTAGE_KEY}
+    volumes:
+      - ./:/app
+      - lightning_data:/app/data
+    networks:
+      - lightning-network
+    depends_on:
+      - postgres
+
+  # PostgreSQL Database for trade history
+  postgres:
+    image: postgres:15-alpine
+    container_name: lightning-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=lightning
+      - POSTGRES_PASSWORD=lightning_secure_password  # CHANGE THIS!
+      - POSTGRES_DB=lightning_gex
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - lightning-network
+
+  # Redis for caching market data
+  redis:
+    image: redis:7-alpine
+    container_name: lightning-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - lightning-network
+
+  # Optional: Grafana for monitoring
+  grafana:
+    image: grafana/grafana:latest
+    container_name: lightning-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123  # CHANGE THIS!
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - lightning-network
+    depends_on:
+      - postgres
+
+volumes:
+  n8n_data:
+    driver: local
+  lightning_data:
+    driver: local
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  lightning-network:
+    driver: bridge
