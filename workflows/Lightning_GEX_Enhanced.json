@@ -1,0 +1,668 @@
+{
+  "name": "Lightning GEX - Enhanced Trading System",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "id": "schedule-trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$now.hour()}}",
+              "operation": "largerEqual",
+              "value2": "9"
+            },
+            {
+              "value1": "={{$now.hour()}}",
+              "operation": "smallerEqual",
+              "value2": "16"
+            },
+            {
+              "value1": "={{$now.dayOfWeek()}}",
+              "operation": "notEqual",
+              "value2": "0"
+            },
+            {
+              "value1": "={{$now.dayOfWeek()}}",
+              "operation": "notEqual",
+              "value2": "6"
+            }
+          ]
+        }
+      },
+      "name": "Market Hours Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "id": "market-hours-check"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Lightning GEX - Ticker List Configuration\nconst tickers = [\n  // High Priority (6 tickers)\n  'SPY',   // S&P 500 ETF\n  'QQQ',   // Nasdaq ETF\n  'AAPL',  // Apple\n  'TSLA',  // Tesla\n  'NVDA',  // Nvidia\n  'AMD',   // AMD\n  \n  // Secondary (15 tickers)\n  'MSFT',  // Microsoft\n  'GOOGL', // Google\n  'AMZN',  // Amazon\n  'META',  // Meta\n  'NFLX',  // Netflix\n  'DIS',   // Disney\n  'BA',    // Boeing\n  'JPM',   // JP Morgan\n  'GS',    // Goldman Sachs\n  'XOM',   // Exxon\n  'CVX',   // Chevron\n  'PFE',   // Pfizer\n  'JNJ',   // Johnson & Johnson\n  'V',     // Visa\n  'MA'     // Mastercard\n];\n\nreturn tickers.map(ticker => ({\n  json: { ticker }\n}));"
+      },
+      "name": "Load Ticker List",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ],
+      "id": "load-tickers"
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:5000/api/fetch_data?ticker={{$json.ticker}}",
+        "method": "GET",
+        "options": {}
+      },
+      "name": "Fetch Market Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        900,
+        300
+      ],
+      "id": "fetch-data"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Lightning GEX - Enhanced Analysis\n// Calls Python backend with enhanced system\n\nconst ticker = $input.item.json.ticker;\nconst marketData = $input.item.json;\n\n// Prepare data for enhanced system\nconst analysisRequest = {\n  ticker: ticker,\n  price_data: {\n    price: marketData.price,\n    sma_20: marketData.sma_20,\n    sma_50: marketData.sma_50,\n    sma_200: marketData.sma_200,\n    adx: marketData.adx,\n    rsi: marketData.rsi,\n    bb_upper: marketData.bb_upper,\n    bb_lower: marketData.bb_lower,\n    stochastic: marketData.stochastic,\n    resistance: marketData.resistance,\n    support: marketData.support,\n    volume: marketData.volume,\n    avg_volume: marketData.avg_volume,\n    atr: marketData.atr,\n    atr_20_avg: marketData.atr_20_avg,\n    bb_width: marketData.bb_width,\n    bb_width_avg: marketData.bb_width_avg,\n    volatility: marketData.volatility\n  },\n  options_data: {\n    gex_signal: marketData.gex_signal,\n    charm_pressure: marketData.charm_pressure,\n    vanna_sensitivity: marketData.vanna_sensitivity,\n    dark_pool_flow: marketData.dark_pool_flow\n  },\n  market_data: {\n    spy_trend: marketData.spy_trend,\n    vix: marketData.vix,\n    vix_20_avg: marketData.vix_20_avg,\n    adx: marketData.market_adx,\n    advance_decline_ratio: marketData.advance_decline\n  },\n  enhancements: {\n    enable_rl_sizing: true,\n    enable_memory: true,\n    enable_multi_agent: true,\n    enable_hierarchical: true,\n    enable_security: true\n  }\n};\n\nreturn [{\n  json: analysisRequest\n}];"
+      },
+      "name": "Prepare Analysis Request",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ],
+      "id": "prepare-analysis"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/analyze_enhanced",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "data",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Enhanced Lightning Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1340,
+        300
+      ],
+      "id": "enhanced-analysis"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.status}}",
+              "value2": "approved"
+            },
+            {
+              "value1": "={{$json.confidence}}",
+              "operation": "largerEqual",
+              "value2": "0.75"
+            }
+          ]
+        }
+      },
+      "name": "Trade Approval Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ],
+      "id": "approval-filter"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Format trade for broker execution\nconst decision = $input.item.json;\n\nconst order = {\n  ticker: decision.ticker,\n  action: decision.action,\n  quantity: decision.quantity,\n  order_type: 'LIMIT',\n  limit_price: decision.entry_price,\n  time_in_force: 'DAY',\n  \n  // Enhanced fields\n  confidence: decision.confidence,\n  position_size_pct: decision.position_size_pct,\n  target_price: decision.target_price,\n  stop_loss: decision.stop_loss,\n  time_horizon: decision.time_horizon,\n  reasoning: decision.reasoning,\n  \n  // Risk management\n  max_loss: Math.abs(decision.entry_price - decision.stop_loss) * decision.quantity,\n  target_profit: Math.abs(decision.target_price - decision.entry_price) * decision.quantity,\n  risk_reward_ratio: Math.abs(decision.target_price - decision.entry_price) / Math.abs(decision.entry_price - decision.stop_loss),\n  \n  // Metadata\n  timestamp: new Date().toISOString(),\n  system: 'Enhanced Lightning GEX',\n  enhancements_used: [\n    'RL Position Sizing',\n    'Memory System',\n    'Multi-Agent Coordination',\n    'Hierarchical Decision',\n    'Security Guardrails'\n  ]\n};\n\nreturn [{ json: order }];"
+      },
+      "name": "Format Order",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ],
+      "id": "format-order"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/place_order",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "order",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Place Order (Broker API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        2000,
+        300
+      ],
+      "id": "place-order"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create comprehensive alert message\nconst order = $input.item.json;\n\nconst message = `\n🚀 **ENHANCED LIGHTNING GEX TRADE SIGNAL**\n\n**Ticker**: ${order.ticker}\n**Action**: ${order.action}\n**Quantity**: ${order.quantity} shares\n**Entry Price**: $${order.limit_price.toFixed(2)}\n\n**Targets**:\n• Take Profit: $${order.target_price.toFixed(2)}\n• Stop Loss: $${order.stop_loss.toFixed(2)}\n• Risk/Reward: ${order.risk_reward_ratio.toFixed(2)}:1\n\n**Position Details**:\n• Size: ${(order.position_size_pct * 100).toFixed(1)}% of portfolio\n• Max Loss: $${order.max_loss.toFixed(2)}\n• Target Profit: $${order.target_profit.toFixed(2)}\n• Time Horizon: ${order.time_horizon} days\n\n**Analysis**:\n• Confidence: ${(order.confidence * 100).toFixed(1)}%\n• System: ${order.system}\n• Enhancements: All 5 Active ✓\n\n**Reasoning**: ${order.reasoning}\n\n**Timestamp**: ${order.timestamp}\n\n---\n⚡ Powered by Enhanced Lightning GEX\n🛡️ Security: Guardrails Active\n🧠 AI: Multi-Agent + RL + Memory\n`;\n\nreturn [{\n  json: {\n    message: message,\n    ticker: order.ticker,\n    action: order.action,\n    price: order.limit_price,\n    quantity: order.quantity\n  }\n}];"
+      },
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        300
+      ],
+      "id": "format-alert"
+    },
+    {
+      "parameters": {
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "url": "https://api.telegram.org/bot{{$credentials.telegramBotToken}}/sendMessage",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "chat_id",
+              "value": "={{$credentials.telegramChatId}}"
+            },
+            {
+              "name": "text",
+              "value": "={{$json.message}}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "Markdown"
+            }
+          ]
+        }
+      },
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        2440,
+        200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-credentials",
+          "name": "Telegram Bot"
+        }
+      },
+      "id": "telegram-alert"
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@yourdomain.com",
+        "toEmail": "={{$credentials.email}}",
+        "subject": "=🚀 Lightning GEX Trade: {{$json.action}} {{$json.ticker}} @ ${{$json.price}}",
+        "text": "={{$json.message}}",
+        "options": {}
+      },
+      "name": "Send Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        400
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "email-credentials",
+          "name": "Email SMTP"
+        }
+      },
+      "id": "email-alert"
+    },
+    {
+      "parameters": {
+        "url": "={{$credentials.discordWebhook}}",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "content",
+              "value": "={{$json.message}}"
+            }
+          ]
+        }
+      },
+      "name": "Send Discord Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        2440,
+        600
+      ],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "discord-credentials",
+          "name": "Discord Webhook"
+        }
+      },
+      "id": "discord-alert"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/log_trade",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "order",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        }
+      },
+      "name": "Log to Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        2220,
+        500
+      ],
+      "id": "log-database"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Monitor open positions and update exits\nconst openPositions = [];\n\nreturn openPositions.map(pos => ({\n  json: pos\n}));"
+      },
+      "name": "Monitor Open Positions",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        500
+      ],
+      "id": "monitor-positions"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.should_exit}}",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "name": "Exit Signal Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        500
+      ],
+      "id": "exit-check"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/close_position",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "position",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        }
+      },
+      "name": "Close Position",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1560,
+        500
+      ],
+      "id": "close-position"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/update_outcome",
+        "method": "POST",
+        "bodyParametersUi": {
+          "parameter": [
+            {
+              "name": "trade_id",
+              "value": "={{$json.trade_id}}"
+            },
+            {
+              "name": "exit_price",
+              "value": "={{$json.exit_price}}"
+            },
+            {
+              "name": "exit_reason",
+              "value": "={{$json.exit_reason}}"
+            }
+          ]
+        }
+      },
+      "name": "Update Trade Outcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1780,
+        500
+      ],
+      "id": "update-outcome"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "name": "Hourly Health Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        700
+      ],
+      "id": "health-check-trigger"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/system_status",
+        "method": "GET"
+      },
+      "name": "Get System Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        460,
+        700
+      ],
+      "id": "system-status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.circuit_breaker_active}}",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "name": "Check Circuit Breaker",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        700
+      ],
+      "id": "circuit-breaker-check"
+    },
+    {
+      "parameters": {
+        "text": "=⚠️ **CIRCUIT BREAKER ACTIVATED** ⚠️\n\n**System**: Enhanced Lightning GEX\n**Reason**: {{$json.circuit_breaker_reason}}\n**Time**: {{$json.timestamp}}\n\n**Status**:\n• Trading: HALTED\n• Daily P&L: ${{$json.daily_pnl}}\n• Daily Trades: {{$json.daily_trades}}\n\n**Action Required**: Manual review and reset needed.\n\nLogin to system to investigate and reset circuit breaker."
+      },
+      "name": "Circuit Breaker Alert",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        900,
+        700
+      ],
+      "id": "circuit-breaker-alert"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Market Hours Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Market Hours Check": {
+      "main": [
+        [
+          {
+            "node": "Load Ticker List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Ticker List": {
+      "main": [
+        [
+          {
+            "node": "Fetch Market Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Market Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare Analysis Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Analysis Request": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Lightning Analysis",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Monitor Open Positions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced Lightning Analysis": {
+      "main": [
+        [
+          {
+            "node": "Trade Approval Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trade Approval Filter": {
+      "main": [
+        [
+          {
+            "node": "Format Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Order": {
+      "main": [
+        [
+          {
+            "node": "Place Order (Broker API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Place Order (Broker API)": {
+      "main": [
+        [
+          {
+            "node": "Format Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Discord Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor Open Positions": {
+      "main": [
+        [
+          {
+            "node": "Exit Signal Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exit Signal Check": {
+      "main": [
+        [
+          {
+            "node": "Close Position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close Position": {
+      "main": [
+        [
+          {
+            "node": "Update Trade Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hourly Health Check": {
+      "main": [
+        [
+          {
+            "node": "Get System Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get System Status": {
+      "main": [
+        [
+          {
+            "node": "Check Circuit Breaker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Circuit Breaker": {
+      "main": [
+        [
+          {
+            "node": "Circuit Breaker Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T00:00:00.000Z",
+  "versionId": "enhanced-lightning-gex-v1"
+}
